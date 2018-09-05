@@ -21,6 +21,7 @@
   command: 'mysql -NBe "{{ item }}"'
   with_items:
     - DELETE FROM mysql.user WHERE User='{{ mysql_root_username }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')
+  when: mysql_root_temp_password is defined
   changed_when: false
 
 - name: Get list of hosts for the root user.
@@ -28,7 +29,7 @@
   register: mysql_root_hosts
   changed_when: false
   check_mode: no
-  when: mysql_install_packages | bool or mysql_root_password_update
+  when: (mysql_root_temp_password is defined and mysql_install_packages | bool) or mysql_root_password_update
 
 # Note: We do not use mysql_user for this operation, as it doesn't always update
 # the root password correctly. See: https://goo.gl/MSOejW
@@ -38,7 +39,7 @@
     mysql -u root -NBe
     'ALTER USER "{{ mysql_root_username }}"@"{{ item }}" IDENTIFIED WITH mysql_native_password BY "{{ mysql_root_password }}";'
   with_items: "{{ mysql_root_hosts.stdout_lines|default([]) }}"
-  when: ((mysql_install_packages | bool) or mysql_root_password_update) and ('5.7.' in mysql_cli_version.stdout)
+  when: ((mysql_root_temp_password is defined and mysql_install_packages | bool) or mysql_root_password_update) and ('5.7.' in mysql_cli_version.stdout)
 
 # Set root password for MySQL < 5.7.x.
 - name: Update MySQL root password for localhost root account (< 5.7.x).
@@ -46,7 +47,7 @@
     mysql -NBe
     'SET PASSWORD FOR "{{ mysql_root_username }}"@"{{ item }}" = PASSWORD("{{ mysql_root_password }}");'
   with_items: "{{ mysql_root_hosts.stdout_lines|default([]) }}"
-  when: ((mysql_install_packages | bool) or mysql_root_password_update) and ('5.7.' not in mysql_cli_version.stdout)
+  when: ((mysql_root_temp_password is defined and mysql_install_packages | bool) or mysql_root_password_update) and ('5.7.' not in mysql_cli_version.stdout)
 
 # Has to be after the root password assignment, for idempotency.
 - name: Copy .my.cnf file with root password credentials.
