@@ -9,6 +9,15 @@
     state: present
   notify: reload apparmor
 
+- name: "Configure AppArmor to allow /sys/devices/system/node/node0/meminfo"
+  lineinfile:
+    path: /etc/apparmor.d/usr.sbin.mysqld
+    regexp: "^  \\/sys\\/devices\\/system\\/node\\/node0\\/meminfo"
+    insertafter: '^# Allow system resource access'
+    line: "  /sys/devices/system/node/node0/meminfo r,"
+    state: present
+  notify: reload apparmor
+
 - name: "Configure AppArmor to allow {{ mysql_datadir }}"
   lineinfile:
     path: /etc/apparmor.d/usr.sbin.mysqld
