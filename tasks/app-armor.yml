@@ -1,0 +1,22 @@
+---
+
+- name: "Configure AppArmor to allow {{ mysql_datadir }}"
+  lineinfile:
+    path: /etc/apparmor.d/usr.sbin.mysqld
+    regexp: "^  {{ mysql_datadir }}"
+    insertafter: '^# Allow data dir access'
+    line: "  {{ mysql_datadir }}/ r,"
+    state: present
+  notify: reload apparmor
+
+- name: "Configure AppArmor to allow {{ mysql_datadir }}/**"
+  lineinfile:
+    path: /etc/apparmor.d/usr.sbin.mysqld
+    regexp: "^  {{ mysql_datadir }}\\/\\*\\*"
+    insertafter: '^# Allow data dir access'
+    line: "  {{ mysql_datadir }}/** rwk,"
+    state: present
+  notify: reload apparmor
+
+- name: Ensure AppArmor is reloaded if needed
+  meta: flush_handlers
